@@ -3,7 +3,7 @@ import google.generativeai as genai
 
 # --- CONFIGURATION ---
 # ඔයා ලබාගත්තු API Key එක මෙතන quotation marks ඇතුළට දාන්න
-API_KEY = "AIzaSyBOshaqdMkq1OLvoKTNNXE3fkTScQoHhgU"
+API_KEY = "AIzaSyBtHQiDZkhDdD5VYazbTLdbrt4eRh2oDJo"
 
 genai.configure(api_key=API_KEY)
 
