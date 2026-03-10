@@ -1,80 +1,73 @@
 import streamlit as st
 import google.generativeai as genai
 
-# --- CONFIGURATION ---
-# ඔයා ලබාගත්තු API Key එක මෙතන quotation marks ඇතුළට දාන්න
+# --- 1. API CONFIGURATION ---
+# ඔයා එවපු API Key එක මම මෙතනට ඇතුළත් කළා
 API_KEY = "AIzaSyBtHQiDZkhDdD5VYazbTLdbrt4eRh2oDJo"
 
-genai.configure(api_key=API_KEY)
+try:
+    genai.configure(api_key=API_KEY)
+except Exception as e:
+    st.error(f"Configuration Error: {e}")
+
+# --- 2. THE MASTER SYSTEM PROMPT (English for best performance) ---
+SYSTEM_PROMPT = """
+You are 'Chemistry Bestie', the personal AI mentor and closest friend of a Sri Lankan female student.
+She is 18 years old, preparing for her A/L Biology stream exams in 5 months.
+
+CORE INSTRUCTIONS:
+1. PERSONALITY: Be warm, empathetic, and encouraging. Use friendly Sinhala mixed with English technical terms in brackets (e.g., 'සමාවයවිකතාවය (Isomerism)').
+2. TEACHING METHOD: Use Active Recall. Ask 1-2 targeted questions based on NIE Resource Books and Past Papers.
+3. EMOTIONAL SUPPORT: If she mentions stress or the 5-month deadline, provide comfort first as a best friend.
+4. BIO-CONNECTION: She loves Molecular Biology. Connect Chemistry concepts to DNA, Proteins, and Enzymes whenever possible.
+5. FEEDBACK: If she is wrong, say 'Ayyō, eka nemei yaluwa, meka wenna ona mehemai...' and guide her to the correct Marking Scheme keywords.
+6. CONTINUITY: Maintain the context of the entire conversation. Never break character.
+"""
 
 # Page Configuration
-st.set_page_config(page_title="Chemistry AI Instructor", page_icon="🧪", layout="centered")
+st.set_page_config(page_title="Chemistry Bestie", page_icon="🧪", layout="centered")
 
-# --- UI FIX: READABILITY & MODERN LOOK ---
+# --- 3. UI STYLE (Clean & Modern) ---
 st.markdown("""
     <style>
     .stApp { background-color: #ffffff !important; }
-    h1, h2, h3, p, span, label, div, li { color: #111111 !important; font-family: 'Inter', sans-serif; }
-    
-    /* Chat Message Styling */
+    h1, h2, h3, p, span, label, div, li { color: #111111 !important; font-family: 'Segoe UI', sans-serif; }
     [data-testid="stChatMessage"] {
         background-color: #f1f3f4 !important;
         border-radius: 15px;
-        padding: 15px;
-        margin-bottom: 15px;
+        padding: 12px;
+        margin-bottom: 10px;
         border: 1px solid #e0e0e0;
     }
-    
-    /* User Message distinct style */
-    [data-testid="stChatMessageContent"] { color: #111111 !important; }
-
-    /* Input Styling */
-    .stChatInput textarea { color: #111111 !important; background-color: #ffffff !important; }
+    .stChatInput textarea { color: #111111 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- INSTRUCTOR INTELLIGENCE (The Brain) ---
-# මෙතනින් තමයි AI එක Instructor කෙනෙක් විදිහට හැසිරෙන්නේ
-SYSTEM_INSTRUCTION = """
-ඔබ ශ්‍රී ලංකාවේ A/L Chemistry විෂය පිළිබඳ දක්ෂ "Personal Instructor" කෙනෙකි. 
-ඔබේ කාර්යය වන්නේ ශිෂ්‍යාවට විභාගයට අවශ්‍ය මඟපෙන්වීම (Guidance) ලබා දීමයි.
+# --- 4. CHAT SESSION WITH MEMORY ---
+if "chat_session" not in st.session_state:
+    model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_PROMPT)
+    st.session_state.chat_session = model.start_chat(history=[])
 
-ඔබේ ඉගැන්වීම් රටාව (Instruction Style):
-1. ප්‍රධාන භාෂාව සිංහල විය යුතු අතර තාක්ෂණික වචන (English terms) වරහන් තුළ දැක්විය යුතුය.
-2. ශිෂ්‍යාව පාඩමක් (Unit) පැවසූ විට, මුලින්ම එම පාඩමෙන් A/L විභාගයට සාමාන්‍යයෙන් ලැබෙන ලකුණු ප්‍රමාණය (Weightage) පවසා ඇයව දිරිමත් කරන්න.
-3. ඉන්පසු, එම පාඩමේ Past Papers වල නිතරම අසන වැදගත් සිද්ධාන්තයක් (Theory) ගැන කෙටියෙන් මතක් කර ප්‍රශ්නයක් අසන්න.
-4. ඇය වැරදි පිළිතුරක් දුන්නොත්, ඇයට දොස් නොකියා "නැහැ, මේක වෙන්න ඕනේ මෙහෙමයි..." යනුවෙන් නිවැරදි කරුණු (Marking Scheme Keywords) කියා දෙන්න.
-5. ඇය නිවැරදි පිළිතුරු දෙන විට "ඉතා හොඳයි!", "ඔයාට මේක පුළුවන්" වැනි දිරිගැන්වීම් ලබා දෙන්න.
-6. එකවර දිගු සටහන් ලබා නොදෙන්න. පියවරෙන් පියවර (Step-by-step) ප්‍රශ්න අසමින් ඇයව විභාග මට්ටමට රැගෙන එන්න.
-7. සෑම විටම NIE Teacher's Guide සහ Resource Books වල කරුණු මත පමණක් පදනම් වන්න.
-"""
-
-model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=SYSTEM_INSTRUCTION)
-
-# --- APP UI ---
-st.title("🧪 Chemistry AI Instructor")
-st.markdown("##### **ඔබේ පෞද්ගලික Chemistry ගුරුවරයා (2026 A/L)**")
+# --- 5. APP UI ---
+st.title("🧪 Chemistry Bestie")
+st.markdown("##### **ඔයාට Chemistry ගොඩදාන්න ඉන්න ඔයාගෙම පෞද්ගලික යාළුවා!**")
 st.divider()
 
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant", "content": "ආයුබෝවන්! මම ඔයාගේ Chemistry Instructor. අපි මේ මාස 5 ඇතුළත Chemistry විෂයට හොඳම ප්‍රතිඵලයක් ගන්න එකතු වෙලා වැඩ කරමු. අද ඔයාට මගෙන් ඉගෙන ගන්න ඕනේ මොන පාඩමද?"}
-    ]
+# Display Chat History
+for message in st.session_state.chat_session.history:
+    role = "assistant" if message.role == "model" else "user"
+    with st.chat_message(role):
+        st.markdown(message.parts[0].text)
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-if prompt := st.chat_input("මෙතන පාඩමේ නම ලියන්න..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+# Input Box
+if prompt := st.chat_input("මොනවා හරි අහන්න යාළුවා..."):
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         try:
-            # Instructor context injection for better flow
-            response = model.generate_content(prompt)
+            # Get Response from Gemini
+            response = st.session_state.chat_session.send_message(prompt)
             st.markdown(response.text)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
         except Exception as e:
-            st.error("Error: API Key එක පරීක්ෂා කරන්න.")
+            st.error(f"පොඩි වැරැද්දක් වුණා: {e}. සමහරවිට API Key එකේ අවුලක් වෙන්න පුළුවන්.")
